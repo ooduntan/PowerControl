@@ -1,5 +1,6 @@
 package power.buk.com.powercontrol;
 
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -7,10 +8,16 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
     private TextView batteryPercent;
+    private int level;
+    private Switch toggle;
     private Context mContext;
 
     @Override
@@ -19,30 +26,44 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mContext = getApplicationContext();
-
         IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        mContext.registerReceiver(mBroadcastReceiver,iFilter);
+
+        mContext.registerReceiver(mBroadcastReceiver, iFilter);
 
         batteryPercent = (TextView) findViewById(R.id.testView);
-//        getBatteryPercentage();
+        toggle = (Switch) findViewById(R.id.toggle);
+
+        if (isMyServiceRunning(BattaryService.class)) {
+            toggle.setChecked(true);
+        }
+
+        clickButton();
     }
 
 
-    private void getBatteryPercentage() {
-        BroadcastReceiver batteryLevelReceiver = new BroadcastReceiver() {
-            public void onReceive(Context context, Intent intent) {
-                context.unregisterReceiver(this);
-                int currentLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-                int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-                int level = -1;
-                if (currentLevel >= 0 && scale > 0) {
-                    level = (currentLevel * 100) / scale;
+    public void clickButton() {
+        toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    Intent battery = new Intent(getBaseContext(), BattaryService.class);
+                    startService(battery);
+                } else {
+                    stopService(new Intent(getBaseContext(), BattaryService.class));
                 }
-                batteryPercent.setText("Battery Level Remaining: " + level + "%");
             }
-        };
-        IntentFilter batteryLevelFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        registerReceiver(batteryLevelReceiver, batteryLevelFilter);
+        });
+
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -71,9 +92,9 @@ public class MainActivity extends AppCompatActivity {
                     Constant Value: "level"
             */
             // get the battery level
-            int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL,-1);
+            level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             // Display the battery level in TextView
-            batteryPercent.setText("Battery Level : " + level);
+            batteryPercent.setText("Current Battery Level: " + level);
         }
     };
 
