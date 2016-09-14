@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
             // get the battery level
             level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             // Display the battery level in TextView
-            batteryPercent.setText("Current Battery Level: " + level);
+            batteryPercent.setText("Current Battery Level: " + level + "%");
         }
     };
 
